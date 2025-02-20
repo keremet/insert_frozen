@@ -13,25 +13,14 @@ sudo make install
 
 PostgreSQL doesn't support functions which accept variable numbers of arguments, where the optional arguments are of the different data types (https://www.postgresql.org/docs/17/xfunc-sql.html#XFUNC-SQL-VARIADIC-FUNCTIONS). So you should create one function per each attribute set of the tables you want to insert frozen rows into. The first argument of the function is a table name, the other arguments must have the same types and order as the table attributes.
 
-The extension shared library is installed in $libdir (see insert_frozen.control). You can get the library path using the query:
-```
-postgres=# select setting from pg_config where name='LIBDIR';
-                 setting
-------------------------------------------
- /home/keremet/compile/postgresql_bin/lib
-(1 row)
-
-postgres=# 
-```
-
-Use the library path to create the function. If a table is created with
+If a table is created using the query:
 ```
 create table t_log(ts timestamp with time zone, msg text);
 ```
 then the function for the table can be created so:
 ```
 create function insert_frozen(regclass, timestamp with time zone, text) returns void
-as '/home/keremet/compile/postgresql_bin/lib/insert_frozen.so', 'insert_frozen'
+as '$libdir/insert_frozen.so', 'insert_frozen'
 language C;
 ```
 

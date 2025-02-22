@@ -1,5 +1,0 @@
-# insert_frozen extension
-comment = 'create log records'
-default_version = '0.1'
-module_pathname = '$libdir/insert_frozen'
-relocatable = true

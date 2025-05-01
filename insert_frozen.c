@@ -1,5 +1,7 @@
 #include "postgres.h"
 #include "access/heapam.h"
+#include "catalog/pg_type.h"
+#include "utils/typcache.h"
 
 PG_MODULE_MAGIC;
 
@@ -8,32 +10,28 @@ PG_FUNCTION_INFO_V1(insert_frozen);
 Datum
 insert_frozen(PG_FUNCTION_ARGS)
 {
-	HeapTuple	tup;
-	Datum	   *values;
-	bool	   *isnull;
-	Relation	rel = relation_open(PG_GETARG_OID(0), RowExclusiveLock);
+	Relation		rel;
+	HeapTupleHeader	row = DatumGetHeapTupleHeader(PG_GETARG_DATUM(0));
+	Oid				row_type = get_fn_expr_argtype(fcinfo->flinfo, 0);
+	HeapTupleData 	tup = { .t_len	= HeapTupleHeaderGetDatumLength(row),
+							.t_data	= row };
 
-	if (PG_NARGS() != 1 + rel->rd_att->natts)
+	TypeCacheEntry *tce = lookup_type_cache(row_type, 0);
+	if (tce->typtype != TYPTYPE_COMPOSITE)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("invalid argument number")));
+				errmsg("The argument type must be composite"),
+				errhint("Example: select %s((1, 't')::tableName);", __func__)));
 
-	values = (Datum *)palloc(rel->rd_att->natts * sizeof(*values));
-	isnull = (bool *)palloc(rel->rd_att->natts * sizeof(*isnull));
-	for (int i = 0; i < rel->rd_att->natts; i++)
-	{
-		values[i] = PG_GETARG_DATUM(i + 1);
-		isnull[i] = PG_ARGISNULL(i + 1);
-	}
+	rel = relation_open(tce->typrelid, RowExclusiveLock);
+	if (rel->rd_rel->relkind != 'r')
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				errmsg("The argument type must refer to an ordinary table")));
 
-	tup = heap_form_tuple(rel->rd_att, values, isnull);
-	heap_insert(rel, tup, GetCurrentCommandId(true), HEAP_INSERT_FROZEN, NULL);
-	heap_freetuple(tup);
+	heap_insert(rel, &tup, GetCurrentCommandId(true), HEAP_INSERT_FROZEN, NULL);
 
 	relation_close(rel, RowExclusiveLock);
-	
-	pfree(isnull);
-	pfree(values);
-	
+
 	PG_RETURN_VOID();
 }

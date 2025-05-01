@@ -6,34 +6,27 @@ Some DBMS support autonomous transactions to create log records, but PostgreSQL 
 #Add path to pg_config
 export PATH=/home/keremet/compile/postgresql_bin/bin:$PATH
 make
-sudo make install
+make install
 ```
 
-# CREATE FUNCTIONS
+# CREATE EXTENSION
 
-PostgreSQL doesn't support functions which accept variable numbers of arguments, where the optional arguments are of the different data types (https://www.postgresql.org/docs/17/xfunc-sql.html#XFUNC-SQL-VARIADIC-FUNCTIONS). So you should create one function per each attribute set of the tables you want to insert frozen rows into. The first argument of the function is a table name, the other arguments must have the same types and order as the table attributes.
-
-If a table is created using the query:
 ```
-create table t_log(ts timestamp with time zone, msg text);
-```
-then the function for the table can be created so:
-```
-create function insert_frozen(regclass, timestamp with time zone, text) returns void
-as '$libdir/insert_frozen.so', 'insert_frozen'
-language C;
+create extension insert_frozen;
 ```
 
-# RUN
+# EXAMPLE
 
 Frozen rows remain when the transaction is rolled back.
 
 ```
+postgres=# create table t_log (ts timestamp with time zone, msg text);
+CREATE TABLE
 postgres=# create table t (i int);
 CREATE TABLE
 postgres=# begin;
 BEGIN
-postgres=*# select insert_frozen('t_log', clock_timestamp(), 'We are ready to insert 10');
+postgres=*# select insert_frozen((clock_timestamp(), 'We are ready to insert 10')::t_log);
  insert_frozen 
 ---------------
  
@@ -41,7 +34,7 @@ postgres=*# select insert_frozen('t_log', clock_timestamp(), 'We are ready to in
 
 postgres=*# insert into t values (10);
 INSERT 0 1
-postgres=*# select insert_frozen('t_log', clock_timestamp(), 'We have inserted 10');
+postgres=*# select insert_frozen((clock_timestamp(), 'We have inserted 10')::t_log);
  insert_frozen 
 ---------------
  
@@ -56,8 +49,8 @@ postgres=*# table t;
 postgres=*# table t_log;
               ts               |            msg            
 -------------------------------+---------------------------
- 2025-02-16 15:08:38.29895+03  | We are ready to insert 10
- 2025-02-16 15:08:53.466983+03 | We have inserted 10
+ 2025-05-01 20:47:45.22164+03  | We are ready to insert 10
+ 2025-05-01 20:48:11.149597+03 | We have inserted 10
 (2 rows)
 
 postgres=*# rollback;
@@ -70,13 +63,14 @@ postgres=# table t;
 postgres=# table t_log;
               ts               |            msg            
 -------------------------------+---------------------------
- 2025-02-16 15:08:38.29895+03  | We are ready to insert 10
- 2025-02-16 15:08:53.466983+03 | We have inserted 10
+ 2025-05-01 20:47:45.22164+03  | We are ready to insert 10
+ 2025-05-01 20:48:11.149597+03 | We have inserted 10
 (2 rows)
 
 postgres=# 
 ```
 
-# TODO
+# LIMITATIONS
 
 The extension doesn't support partitioned tables. Insert rows into partitions directly.
+The extension supports heap tables only. Heap is the default table access method.

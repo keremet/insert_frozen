@@ -16,7 +16,7 @@ insert_frozen(PG_FUNCTION_ARGS)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				errmsg("The argument type must be composite"),
-				errhint("Example: select %s((1, 't')::tableName);", __func__)));
+				errhint("Example: call %s((1, 't')::tableName);", __func__)));
 
 	Relation		rel = relation_open(tce->typrelid, RowExclusiveLock);
 	if (rel->rd_rel->relkind != 'r')

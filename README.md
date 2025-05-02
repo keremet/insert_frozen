@@ -26,22 +26,14 @@ postgres=# create table t (i int);
 CREATE TABLE
 postgres=# begin;
 BEGIN
-postgres=*# select insert_frozen((clock_timestamp(), 'We are ready to insert 10')::t_log);
- insert_frozen 
----------------
- 
-(1 row)
-
+postgres=*# call insert_frozen((clock_timestamp(), 'We are ready to insert 10')::t_log);
+CALL
 postgres=*# insert into t values (10);
 INSERT 0 1
-postgres=*# select insert_frozen((clock_timestamp(), 'We have inserted 10')::t_log);
- insert_frozen 
----------------
- 
-(1 row)
-
+postgres=*# call insert_frozen((clock_timestamp(), 'We have inserted 10')::t_log);
+CALL
 postgres=*# table t;
- i
+ i  
 ----
  10
 (1 row)
@@ -49,8 +41,8 @@ postgres=*# table t;
 postgres=*# table t_log;
               ts               |            msg            
 -------------------------------+---------------------------
- 2025-05-01 20:47:45.22164+03  | We are ready to insert 10
- 2025-05-01 20:48:11.149597+03 | We have inserted 10
+ 2025-05-02 15:38:18.996801+03 | We are ready to insert 10
+ 2025-05-02 15:38:57.644319+03 | We have inserted 10
 (2 rows)
 
 postgres=*# rollback;
@@ -63,8 +55,8 @@ postgres=# table t;
 postgres=# table t_log;
               ts               |            msg            
 -------------------------------+---------------------------
- 2025-05-01 20:47:45.22164+03  | We are ready to insert 10
- 2025-05-01 20:48:11.149597+03 | We have inserted 10
+ 2025-05-02 15:38:18.996801+03 | We are ready to insert 10
+ 2025-05-02 15:38:57.644319+03 | We have inserted 10
 (2 rows)
 
 postgres=# 

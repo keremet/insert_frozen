@@ -65,4 +65,3 @@ postgres=#
 # LIMITATIONS
 
 The extension doesn't support partitioned tables. Insert rows into partitions directly.
-The extension supports heap tables only. Heap is the default table access method.

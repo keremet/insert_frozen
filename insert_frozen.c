@@ -24,10 +24,10 @@ insert_frozen(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				errmsg("The argument type must refer to an ordinary table")));
 
-	HeapTupleHeader	row = DatumGetHeapTupleHeader(PG_GETARG_DATUM(0));
-	HeapTupleData 	tup = { .t_len	= HeapTupleHeaderGetDatumLength(row),
-							.t_data	= row };
-	heap_insert(rel, &tup, GetCurrentCommandId(true), HEAP_INSERT_FROZEN, NULL);
+	TupleTableSlot *slot = MakeTupleTableSlot(rel->rd_att, &TTSOpsVirtual);
+	ExecStoreHeapTupleDatum(PG_GETARG_DATUM(0), slot);
+	table_tuple_insert(rel, slot, GetCurrentCommandId(true), TABLE_INSERT_FROZEN, NULL);
+	ExecDropSingleTupleTableSlot(slot);
 
 	relation_close(rel, RowExclusiveLock);
 

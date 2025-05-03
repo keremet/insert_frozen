@@ -64,5 +64,5 @@ postgres=#
 
 # LIMITATIONS
 
-1. The extension doesn't support partitioned tables. Insert rows into partitions directly.
+1. The extension supports ordinary tables only. Partitioned tables are not supported. Insert rows into partitions directly.
 2. The insert_frozen function requires the Share table-level lock mode. If another transaction has executed an INSERT query into the same table, the function waits for that transaction to complete.
